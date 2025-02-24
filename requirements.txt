@@ -1,0 +1,7 @@
+Flask
+torch
+clip
+Pillow
+numpy
+SQLAlchemy
+psycopg2-binary
