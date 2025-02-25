@@ -1,7 +1,10 @@
 @echo off
 REM Exit immediately if a command exits with a non-zero status
 setlocal enabledelayedexpansion
-
+REM Create necessary directories
+echo Creating necessary directories...
+mkdir Embeddings\
+mkdir static\images
 REM Create a virtual environment
 echo Creating a virtual environment...
 python -m venv venv
@@ -16,9 +19,7 @@ pip install -r requirements.txt
 pip install git+https://github.com/openai/CLIP.git
 pip install streamlit
 
-REM Create necessary directories
-echo Creating necessary directories...
-mkdir static\images
+
 
 REM Run the initializer script
 echo Running the initializer script...
