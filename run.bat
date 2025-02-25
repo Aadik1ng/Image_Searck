@@ -5,6 +5,7 @@ setlocal enabledelayedexpansion
 REM Activate the virtual environment
 echo Activating the virtual environment...
 call venv\Scripts\activate
+echo Before Running this script add images in the static\images folder and Re run this script
 
 REM Run the Flask backend in the background
 echo Starting the Flask backend...
