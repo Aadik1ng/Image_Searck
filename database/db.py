@@ -18,3 +18,13 @@ class Database:
 
     def get_connection(self):
         return self.conn
+
+    def execute_query(self, query, params=None):
+        """Executes a database query with exception handling."""
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, params)
+                return cur.fetchall()
+        except Exception as e:
+            print(f"Database error: {e}")
+            return None
