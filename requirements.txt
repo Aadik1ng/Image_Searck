@@ -1,0 +1,13 @@
+psycopg2-binary
+openai
+numpy
+python-dotenv
+git+https://github.com/openai/CLIP.git
+Flask
+torch
+clip
+Pillow
+numpy
+SQLAlchemy
+streamlit
+psycopg2-binary
