@@ -34,6 +34,16 @@ def add_image():
     embedding = np.array(embedding, dtype=np.float32)
 
     db = Database.get_instance()
+    # Check for existing similar images before adding
+    existing_results = db.execute_query(f"""
+        SELECT id FROM {IMAGE_EMBEDDINGS_TABLE}
+        ORDER BY embedding <=> %s
+        LIMIT 1;
+    """, (embedding.tolist(),))
+
+    if existing_results and existing_results[0]['id']:
+        return jsonify({"error": "Similar image already exists in the database"}), 409
+
     result = db.execute_query(f"""
         INSERT INTO {IMAGE_EMBEDDINGS_TABLE} (embedding, image_path)
         VALUES (%s, %s)
@@ -64,42 +74,20 @@ def delete_image():
     input_embedding = np.array(input_embedding, dtype=np.float32)
 
     db = Database.get_instance()
-    results = db.execute_query(f"""
-        SELECT id, image_path, embedding
+    # Find the best match using SQL
+    best_match = db.execute_query(f"""
+        SELECT id, image_path
         FROM {IMAGE_EMBEDDINGS_TABLE}
-        LIMIT 1000;
-    """)
+        ORDER BY embedding <=> %s
+        LIMIT 1;
+    """, (input_embedding.tolist(),))
+
+    if not best_match:
+        return jsonify({"error": "No matching image found"}), 404
+
+    image_id = best_match[0]['id']
+    image_path = best_match[0]['image_path']
     
-    if results is None:
-        return jsonify({"error": "Failed to retrieve images from database"}), 500
-
-    best_similarity = -1.0
-    best_match = None
-
-    # Iterate over each record and compute cosine similarity using the SQL function.
-    for row in results:
-        candidate_raw = row['embedding']
-        if isinstance(candidate_raw, str):
-            candidate_embedding = np.array(ast.literal_eval(candidate_raw), dtype=np.float32)
-        else:
-            candidate_embedding = np.array(candidate_raw, dtype=np.float32)
-
-        # Use the SQL function to compute similarity
-        sim = db.execute_query(f"""
-            SELECT cosine_similarity(%s, %s) AS similarity;
-        """, (input_embedding.tolist(), candidate_embedding.tolist()))[0]['similarity']
-
-        if sim > best_similarity:
-            best_similarity = sim
-            best_match = row
-
-    # Enforce a similarity threshold (e.g., require at least 0.9 similarity).
-    similarity_threshold = 0.9  # Adjust as needed
-    if best_similarity < similarity_threshold:
-        return jsonify({"error": "No matching image found within acceptable similarity threshold"}), 404
-
-    image_id = best_match['id']
-    image_path = best_match['image_path']
     # Delete the best-matching record.
     cur = db.get_connection().cursor()
     cur.execute(f"DELETE FROM {IMAGE_EMBEDDINGS_TABLE} WHERE id = %s;", (image_id,))
@@ -108,7 +96,6 @@ def delete_image():
         "message": "Image deleted successfully",
         "image_path": image_path
     })
-
 @api_bp.route('/search', methods=['GET'])
 def search_image():
     """
@@ -128,36 +115,15 @@ def search_image():
     results = db.execute_query(f"""
         SELECT image_path, embedding
         FROM {IMAGE_EMBEDDINGS_TABLE}
-        LIMIT 1000;
-    """)
+        ORDER BY embedding <=> %s
+        LIMIT 10;
+    """, (query_embedding.tolist(),))
     
-    if results is None:
-        return jsonify({"error": "Failed to retrieve images from database"}), 500
+    if results is None or len(results) == 0:
+        return jsonify({"error": "No matching image found"}), 404
 
-    best_similarity = -1.0
-    best_match = None
-
-    # Iterate over each candidate to compute cosine similarity using the SQL function.
-    for row in results:
-        candidate_raw = row['embedding']
-        if isinstance(candidate_raw, str):
-            candidate_embedding = np.array(ast.literal_eval(candidate_raw), dtype=np.float32)
-        else:
-            candidate_embedding = np.array(candidate_raw, dtype=np.float32)
-
-        # Use the SQL function to compute similarity
-        sim = db.execute_query(f"""
-            SELECT cosine_similarity(%s, %s) AS similarity;
-        """, (query_embedding.tolist(), candidate_embedding.tolist()))[0]['similarity']
-
-        if sim > best_similarity:
-            best_similarity = sim
-            best_match = row
-
-    similarity_threshold = 0.2  # Adjust threshold as needed
-    if best_similarity < similarity_threshold:
-        return jsonify({"error": "No matching image found within acceptable similarity threshold"}), 404
-
+    # Assuming you want to return the best match
+    best_match = results[0]
     image_path = best_match['image_path']
 
     return jsonify({"image_path": image_path})
