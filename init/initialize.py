@@ -12,6 +12,14 @@ def initialize_db():
             image_path TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_embedding ON {IMAGE_EMBEDDINGS_TABLE} USING ivfflat (embedding);
+
+        -- Function to calculate cosine similarity
+        CREATE OR REPLACE FUNCTION cosine_similarity(vec1 VECTOR, vec2 VECTOR)
+        RETURNS FLOAT AS $$
+        BEGIN
+            RETURN (vec1 <=> vec2);
+        END;
+        $$ LANGUAGE plpgsql;
         """)
         print("Database initialized successfully.")
     except Exception as e:
