@@ -11,6 +11,7 @@ def initialize_db():
             embedding VECTOR(512),  -- Adjust this dimension based on the embedding size
             image_path TEXT NOT NULL
         );
+        CREATE INDEX IF NOT EXISTS idx_embedding ON {IMAGE_EMBEDDINGS_TABLE} USING ivfflat (embedding);
         """)
         print("Database initialized successfully.")
     except Exception as e:
