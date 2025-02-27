@@ -76,7 +76,7 @@ def delete_image():
     best_similarity = -1.0
     best_match = None
 
-    # Iterate over each record and compute cosine similarity.
+    # Iterate over each record and compute cosine similarity using the SQL function.
     for row in results:
         candidate_raw = row['embedding']
         if isinstance(candidate_raw, str):
@@ -84,7 +84,11 @@ def delete_image():
         else:
             candidate_embedding = np.array(candidate_raw, dtype=np.float32)
 
-        sim = cosine_similarity(input_embedding, candidate_embedding)
+        # Use the SQL function to compute similarity
+        sim = db.execute_query(f"""
+            SELECT cosine_similarity(%s, %s) AS similarity;
+        """, (input_embedding.tolist(), candidate_embedding.tolist()))[0]['similarity']
+
         if sim > best_similarity:
             best_similarity = sim
             best_match = row
@@ -133,7 +137,7 @@ def search_image():
     best_similarity = -1.0
     best_match = None
 
-    # Iterate over each candidate to compute cosine similarity.
+    # Iterate over each candidate to compute cosine similarity using the SQL function.
     for row in results:
         candidate_raw = row['embedding']
         if isinstance(candidate_raw, str):
@@ -141,7 +145,11 @@ def search_image():
         else:
             candidate_embedding = np.array(candidate_raw, dtype=np.float32)
 
-        sim = cosine_similarity(query_embedding, candidate_embedding)
+        # Use the SQL function to compute similarity
+        sim = db.execute_query(f"""
+            SELECT cosine_similarity(%s, %s) AS similarity;
+        """, (query_embedding.tolist(), candidate_embedding.tolist()))[0]['similarity']
+
         if sim > best_similarity:
             best_similarity = sim
             best_match = row
