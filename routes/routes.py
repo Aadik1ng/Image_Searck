@@ -66,7 +66,8 @@ def delete_image():
     db = Database.get_instance()
     results = db.execute_query(f"""
         SELECT id, image_path, embedding
-        FROM {IMAGE_EMBEDDINGS_TABLE};
+        FROM {IMAGE_EMBEDDINGS_TABLE}
+        LIMIT 1000;
     """)
     
     if results is None:
@@ -122,7 +123,8 @@ def search_image():
     db = Database.get_instance()
     results = db.execute_query(f"""
         SELECT image_path, embedding
-        FROM {IMAGE_EMBEDDINGS_TABLE};
+        FROM {IMAGE_EMBEDDINGS_TABLE}
+        LIMIT 1000;
     """)
     
     if results is None:
